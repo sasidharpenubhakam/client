@@ -70,6 +70,7 @@
         .nav-item.active { background: rgba(79,142,247,0.15); color: var(--accent); font-weight: 500; }
         .nav-item .icon { font-size: 1.1rem; width: 20px; text-align: center; }
         .sidebar-footer { padding: 16px 24px; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text3); }
+        .sidebar-footer .dev-name { font-size: 0.7rem; color: var(--accent); margin-top: 6px; font-weight: 500; letter-spacing: 0.3px; }
 
         /* ── MAIN ── */
         .main { margin-left: 240px; padding: 32px 36px; position: relative; z-index: 1; min-height: 100vh; }
@@ -380,7 +381,10 @@
         <div class="nav-item"><span class="icon">📁</span><span>Export</span></div>
         <div class="nav-item"><span class="icon">⚙️</span><span>Settings</span></div>
     </div>
-    <div class="sidebar-footer">v2.0 · LocalDB</div>
+    <div class="sidebar-footer">
+        v2.0 · LocalDB
+        <div class="dev-name">👨‍💻 Sasidhar Penubhakam</div>
+    </div>
 </nav>
 
 <!-- MAIN -->
@@ -1107,5 +1111,33 @@ ${(c.secName || c.secMobile) ? `
     function formatDate(iso) { return new Date(iso).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
     function formatDOB(dob) { if(!dob) return '—'; const [y,m,d]=dob.split('-'); return `${d}/${m}/${y}`; }
 </script>
+<!-- BOTTOM FOOTER -->
+<footer style="
+    margin-left: 240px;
+    padding: 20px 36px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--text3);
+    position: relative;
+    z-index: 1;
+">
+    <div>© 2026 <span style="color:var(--text2)">ClientVault</span> · All rights reserved</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+        <span>Developed by</span>
+        <span style="
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 0.82rem;
+            letter-spacing: 0.3px;
+        ">👨‍💻 Sasidhar Penubhakam</span>
+    </div>
+</footer>
+
 </body>
 </html>
