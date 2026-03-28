@@ -70,7 +70,6 @@
         .nav-item.active { background: rgba(79,142,247,0.15); color: var(--accent); font-weight: 500; }
         .nav-item .icon { font-size: 1.1rem; width: 20px; text-align: center; }
         .sidebar-footer { padding: 16px 24px; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text3); }
-        .sidebar-footer .dev-name { font-size: 0.7rem; color: var(--accent); margin-top: 6px; font-weight: 500; letter-spacing: 0.3px; }
 
         /* ── MAIN ── */
         .main { margin-left: 240px; padding: 32px 36px; position: relative; z-index: 1; min-height: 100vh; }
@@ -369,6 +368,22 @@
 </head>
 <body>
 
+<!-- FIREBASE LOADING -->
+<div id="fbLoading" style="
+    display:flex; position:fixed; inset:0; z-index:999;
+    background:rgba(7,11,20,0.7); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center; flex-direction:column; gap:16px;
+">
+    <div style="
+        width:48px; height:48px; border-radius:50%;
+        border:3px solid rgba(79,142,247,0.2);
+        border-top-color:#4f8ef7;
+        animation:spin 0.8s linear infinite;
+    "></div>
+    <div style="color:#e8edf7;font-family:'DM Sans',sans-serif;font-size:0.9rem;">Connecting to database…</div>
+</div>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
 <!-- SIDEBAR -->
 <nav class="sidebar">
     <div class="logo">
@@ -381,10 +396,7 @@
         <div class="nav-item"><span class="icon">📁</span><span>Export</span></div>
         <div class="nav-item"><span class="icon">⚙️</span><span>Settings</span></div>
     </div>
-    <div class="sidebar-footer">
-        v2.0 · LocalDB
-        <div class="dev-name">👨‍💻 Sasidhar Penubhakam</div>
-    </div>
+    <div class="sidebar-footer">v2.0 · LocalDB</div>
 </nav>
 
 <!-- MAIN -->
@@ -778,7 +790,7 @@
   </tr></thead>
   <tbody>
     ${db.map(c => `
-    <tr onclick="viewClient('${c.id}')">
+    <tr onclick="viewClient('${c._docId || c.id}')">
       <td><div class="name-cell">
         <div class="avatar" style="background:${colorFor(c.name)}">${initials(c.name)}</div>
         <div><strong>${escHtml(c.name)}</strong><small>Added ${formatDate(c.createdAt)}</small></div>
@@ -790,9 +802,9 @@
       <td>${c.poc ? `<span class="badge badge-purple">${pocIcon(c.poc)} ${escHtml(c.poc)}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
       <td>${c.houseDirection ? `<span class="badge">${c.houseDirection}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
       <td onclick="event.stopPropagation()"><div class="action-btns">
-        <button class="icon-btn" title="View" onclick="viewClient('${c.id}')">👁</button>
-        <button class="icon-btn" title="Edit" onclick="editClient('${c.id}')">✏️</button>
-        <button class="icon-btn del" title="Delete" onclick="deleteClient('${c.id}')">🗑</button>
+        <button class="icon-btn" title="View" onclick="viewClient('${c._docId || c.id}')">👁</button>
+        <button class="icon-btn" title="Edit" onclick="editClient('${c._docId || c.id}')">✏️</button>
+        <button class="icon-btn del" title="Delete" onclick="deleteClient('${c._docId || c.id}')">🗑</button>
       </div></td>
     </tr>`).join('')}
   </tbody></table>`;
@@ -900,57 +912,54 @@
         return ok;
     }
 
-    // ── SAVE ──
+    // ── SAVE → Firebase ──
     function saveClient() {
         if (!validate()) { showToast('⚠️','Validation Error','Please fill all required fields correctly'); return; }
-        const db = getDB();
+
+        // Find existing createdAt if editing
+        let createdAt = new Date().toISOString();
+        if (editingId) {
+            const existing = (window._fbData || []).find(c => c._docId === editingId);
+            if (existing) createdAt = existing.createdAt;
+        }
+
         const record = {
-            id: editingId || ('CV' + Date.now()),
+            id: editingId ? ((window._fbData||[]).find(c=>c._docId===editingId)?.id || ('CV'+Date.now())) : ('CV' + Date.now()),
             name: document.getElementById('fName').value.trim(),
             dob: document.getElementById('fDOB').value,
             age: document.getElementById('fAge').value,
             birthTime: document.getElementById('fBirthTime').value,
             birthPlace: document.getElementById('fBirthPlace').value.trim(),
-            // Primary contact
             mobile: document.getElementById('fMobile').value.trim(),
             email: document.getElementById('fEmail').value.trim(),
             whatsapp: document.getElementById('fWhatsapp').value.trim(),
             contactTime: document.getElementById('fContactTime').value,
-            // Secondary contact
             secName: document.getElementById('fSecName').value.trim(),
             secRelation: document.getElementById('fSecRelation').value,
             secMobile: document.getElementById('fSecMobile').value.trim(),
             secEmail: document.getElementById('fSecEmail').value.trim(),
             secNotes: document.getElementById('fSecNotes').value.trim(),
-            // Location & Source
             contactedFrom: document.getElementById('fContactedFrom').value.trim(),
             houseDirection: document.getElementById('fHouseDirection').value,
             houseType: document.getElementById('fHouseType').value,
             houseAddress: document.getElementById('fHouseAddress').value.trim(),
             poc: document.getElementById('fPOC').value,
             referredBy: document.getElementById('fReferredBy').value.trim(),
-            // Meta
-            createdAt: editingId ? (db.find(c=>c.id===editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+            createdAt: createdAt,
             updatedAt: new Date().toISOString()
         };
 
-        if (editingId) {
-            const idx = db.findIndex(c => c.id === editingId);
-            if (idx !== -1) db[idx] = record;
-            showToast('✏️','Client Updated',`${record.name}'s details have been updated`);
-        } else {
-            db.unshift(record);
-            showToast('✅','Client Saved',`${record.name} has been added successfully`);
-        }
-        saveDB(db); closeAddModal(); renderTable(); updateStats();
-        if (currentSearch) handleSearch();
+        const docId = editingId || null;
+        closeAddModal();
+        if (window._firebaseSave) window._firebaseSave(record, docId);
     }
 
-    // ── EDIT ──
+    // ── EDIT → Firebase ──
     function editClient(id) {
-        const db = getDB(); const c = db.find(x=>x.id===id);
+        const data = window._fbData || [];
+        const c = data.find(x => x._docId === id);
         if (!c) return;
-        editingId = id;
+        editingId = id;  // store Firestore docId
         document.getElementById('modalTitle').textContent = 'Edit Client';
         document.getElementById('modalSubtitle').textContent = `Editing record for ${c.name}`;
         document.getElementById('fName').value = c.name || '';
@@ -978,20 +987,19 @@
         document.getElementById('addOverlay').classList.add('open');
     }
 
-    // ── DELETE ──
+    // ── DELETE → Firebase ──
     function deleteClient(id) {
-        const db = getDB(); const c = db.find(x=>x.id===id);
+        const data = window._fbData || [];
+        const c = data.find(x => x._docId === id);
         if (!c) return;
         if (!confirm(`Delete client "${c.name}"? This cannot be undone.`)) return;
-        saveDB(db.filter(x=>x.id!==id));
-        showToast('🗑️','Client Deleted',`${c.name} has been removed`);
-        renderTable(); updateStats();
-        if (currentSearch) handleSearch();
+        if (window._firebaseDelete) window._firebaseDelete(id, c.name);
     }
 
-    // ── VIEW ──
+    // ── VIEW → Firebase ──
     function viewClient(id) {
-        const db = getDB(); const c = db.find(x=>x.id===id);
+        const data = window._fbData || [];
+        const c = data.find(x => x._docId === id);
         if (!c) return;
         const col = colorFor(c.name);
         document.getElementById('vAvatar').textContent = initials(c.name);
@@ -1067,31 +1075,17 @@ ${(c.secName || c.secMobile) ? `
     function closeViewModal() { document.getElementById('viewOverlay').classList.remove('open'); }
     function handleViewOverlayClick(e) { if (e.target === document.getElementById('viewOverlay')) closeViewModal(); }
 
-    // ── EXPORT CSV ──
+    // ── EXPORT CSV → Firebase ──
     function exportCSV() {
-        const db = getDB();
-        if (!db.length) { showToast('⚠️','No Data','Nothing to export'); return; }
-        const headers = ['ID','Name','DOB','Age','Birth Time','Birth Place','Mobile','Email','WhatsApp','Contacted From','House Direction','House Type','House Address','Point of Contact','Referred By','Sec Name','Sec Relation','Sec Mobile','Sec Email','Created At'];
-        const rows = db.map(c => [
-            c.id, `"${c.name}"`, c.dob, c.age, c.birthTime, `"${c.birthPlace}"`,
-            c.mobile, c.email, c.whatsapp, `"${c.contactedFrom||''}"`,
-            c.houseDirection, c.houseType, `"${c.houseAddress||''}"`,
-            c.poc, `"${c.referredBy||''}"`,
-            `"${c.secName||''}"`, c.secRelation, c.secMobile, c.secEmail,
-            new Date(c.createdAt).toLocaleString()
-        ]);
-        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `clientvault_export_${Date.now()}.csv`; a.click();
-        showToast('⬇️','Export Ready',`${db.length} records exported as CSV`);
+        if (window._firebaseExport) window._firebaseExport();
     }
 
-    // ── CLEAR ALL ──
+    // ── CLEAR ALL → Firebase ──
     function clearAll() {
-        const db = getDB(); if (!db.length) return;
-        if (!confirm(`This will permanently delete ALL ${db.length} client records. Are you sure?`)) return;
-        saveDB([]); renderTable(); updateStats();
+        const data = window._fbData || [];
+        if (!data.length) return;
+        if (!confirm(`This will permanently delete ALL ${data.length} client records. Are you sure?`)) return;
+        data.forEach(c => { if (window._firebaseDelete) window._firebaseDelete(c._docId, c.name); });
         showToast('🗑️','All Records Cleared','Database has been reset');
     }
 
@@ -1111,33 +1105,114 @@ ${(c.secName || c.secMobile) ? `
     function formatDate(iso) { return new Date(iso).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
     function formatDOB(dob) { if(!dob) return '—'; const [y,m,d]=dob.split('-'); return `${d}/${m}/${y}`; }
 </script>
-<!-- BOTTOM FOOTER -->
-<footer style="
-    margin-left: 240px;
-    padding: 20px 36px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.78rem;
-    color: var(--text3);
-    position: relative;
-    z-index: 1;
-">
-    <div>© 2026 <span style="color:var(--text2)">ClientVault</span> · All rights reserved</div>
-    <div style="display:flex;align-items:center;gap:8px;">
-        <span>Developed by</span>
-        <span style="
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-family: 'Syne', sans-serif;
-            font-weight: 700;
-            font-size: 0.82rem;
-            letter-spacing: 0.3px;
-        ">👨‍💻 Sasidhar Penubhakam</span>
-    </div>
-</footer>
+
+<!-- ── FIREBASE SDK ── -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // ── YOUR FIREBASE CONFIG ──
+    const firebaseConfig = {
+        apiKey: "AIzaSyC_8-Ad0HnXmFePBXN99eGd6SDuyw3Qh3o",
+        authDomain: "clientvault-6e369.firebaseapp.com",
+        projectId: "clientvault-6e369",
+        storageBucket: "clientvault-6e369.firebasestorage.app",
+        messagingSenderId: "313560991246",
+        appId: "1:313560991246:web:d614917410bd7236ca1e5f"
+    };
+
+    const fireApp = initializeApp(firebaseConfig);
+    const db = getFirestore(fireApp);
+    const clientsCol = collection(db, 'clients');
+
+    // ── LOADING OVERLAY ──
+    function setLoading(on) {
+        document.getElementById('fbLoading').style.display = on ? 'flex' : 'none';
+    }
+
+    // ── REAL-TIME LISTENER ──
+    // Replaces localStorage - data loads live from Firestore on ALL devices
+    const q = query(clientsCol, orderBy('createdAt', 'desc'));
+    onSnapshot(q, (snapshot) => {
+        window._fbData = snapshot.docs.map(d => ({ ...d.data(), _docId: d.id }));
+        renderTable(window._fbData);
+        updateStatsFirebase(window._fbData);
+        setLoading(false);
+    }, (err) => {
+        console.error('Firestore:', err);
+        showToast('❌', 'DB Error', 'Could not connect to database');
+        setLoading(false);
+    });
+
+    function updateStatsFirebase(data) {
+        const today = new Date().toDateString();
+        const thisMonth = new Date().getMonth() + '-' + new Date().getFullYear();
+        document.getElementById('statTotal').textContent = data.length;
+        document.getElementById('statToday').textContent = data.filter(c => new Date(c.createdAt).toDateString() === today).length;
+        document.getElementById('statMonth').textContent = data.filter(c => {
+            const d = new Date(c.createdAt);
+            return d.getMonth() + '-' + d.getFullYear() === thisMonth;
+        }).length;
+        document.getElementById('clientCount').textContent = data.length > 0 ? `· ${data.length} records` : '';
+    }
+
+    // ── OVERRIDE saveClient → Firebase ──
+    window._firebaseSave = async function(record, editDocId) {
+        setLoading(true);
+        try {
+            if (editDocId) {
+                await updateDoc(doc(db, 'clients', editDocId), record);
+                showToast('✏️', 'Client Updated', `${record.name}'s details have been updated`);
+            } else {
+                await addDoc(clientsCol, record);
+                showToast('✅', 'Client Saved', `${record.name} has been added successfully`);
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('❌', 'Save Failed', 'Could not save. Check Firestore rules.');
+        }
+        setLoading(false);
+    };
+
+    // ── OVERRIDE deleteClient → Firebase ──
+    window._firebaseDelete = async function(docId, name) {
+        setLoading(true);
+        try {
+            await deleteDoc(doc(db, 'clients', docId));
+            showToast('🗑️', 'Client Deleted', `${name} has been removed`);
+        } catch (e) {
+            console.error(e);
+            showToast('❌', 'Delete Failed', 'Could not delete from database');
+        }
+        setLoading(false);
+    };
+
+    // ── OVERRIDE exportCSV → use Firebase data ──
+    window._firebaseExport = function() {
+        const data = window._fbData || [];
+        if (!data.length) { showToast('⚠️', 'No Data', 'Nothing to export'); return; }
+        const headers = ['ID','Name','DOB','Age','Birth Time','Birth Place','Mobile','Email','WhatsApp',
+                         'Contacted From','House Direction','House Type','House Address',
+                         'Point of Contact','Referred By','Sec Name','Sec Relation','Sec Mobile','Sec Email','Created At'];
+        const rows = data.map(c => [
+            c.id||'', `"${c.name||''}"`, c.dob||'', c.age||'', c.birthTime||'', `"${c.birthPlace||''}"`,
+            c.mobile||'', c.email||'', c.whatsapp||'', `"${c.contactedFrom||''}"`,
+            c.houseDirection||'', c.houseType||'', `"${c.houseAddress||''}"`,
+            c.poc||'', `"${c.referredBy||''}"`,
+            `"${c.secName||''}"`, c.secRelation||'', c.secMobile||'', c.secEmail||'',
+            new Date(c.createdAt).toLocaleString()
+        ]);
+        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `clientvault_export_${Date.now()}.csv`;
+        a.click();
+        showToast('⬇️', 'Export Ready', `${data.length} records exported`);
+    };
+
+    console.log('✅ Firebase connected → clientvault-6e369');
+</script>
 
 </body>
 </html>
