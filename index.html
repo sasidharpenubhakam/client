@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-
+ 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,70 +8,65 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
         rel="stylesheet">
-            <script type="module">
-                import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-                import {
-                    getFirestore, collection, addDoc, doc, updateDoc,
-                    deleteDoc, onSnapshot, query, orderBy, Timestamp
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import {
+            getFirestore, collection, addDoc, doc, updateDoc,
+            deleteDoc, onSnapshot, query, orderBy, Timestamp
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+ 
+        // ✅ Firebase config — connected to clientshuman
+        const firebaseConfig = {
+            apiKey: "AIzaSyDcm8JrT6C7DTnaYTgJep4TaYGZb4qUW2k",
+            authDomain: "clientshuman.firebaseapp.com",
+            projectId: "clientshuman",
+            storageBucket: "clientshuman.firebasestorage.app",
+            messagingSenderId: "893684990880",
+            appId: "1:893684990880:web:6b885153b5b9dade375ac5",
+            measurementId: "G-ZGY7RXEEQQ"
+        };
+ 
+        let appReady = false;
+        try {
+            const firebaseApp = initializeApp(firebaseConfig);
+            const db = getFirestore(firebaseApp);
+            const colRef = collection(db, "clients");
+ 
+            // Expose Firestore helpers to window so the main script can use them
+            window._db = {
+                colRef,
+                addDoc,
+                doc: (id) => doc(db, "clients", id),
+                updateDoc,
+                deleteDoc,
+                ready: true
+            };
+ 
+            // ── Real-time listener: every browser sees live updates instantly ──
+            const q = query(colRef, orderBy("createdAt", "desc"));
+            onSnapshot(q, (snapshot) => {
+                window._clients = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (typeof window.renderTable === 'function') {
+                    window.renderTable();
+                    window.updateStats();
                 }
-                    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-                // ✅ Firebase config — connected to client-8e4d0
-                const firebaseConfig = {
-                    apiKey: "AIzaSyDPnD4g_-JvXYB30FJF9NLgO0LkT3LyWeQ",
-                    authDomain: "client-8e4d0.firebaseapp.com",
-                    projectId: "client-8e4d0",
-                    storageBucket: "client-8e4d0.firebasestorage.app",
-                    messagingSenderId: "66439951006",
-                    appId: "1:66439951006:web:1bddf2333968f7e2f0c18f",
-                    measurementId: "G-T15SY6YPV9"
-                };
-
-                let appReady = false;
-                try {
-                    const firebaseApp = initializeApp(firebaseConfig);
-                    const db = getFirestore(firebaseApp);
-                    const colRef = collection(db, "clients");
-
-                    // Expose Firestore helpers to window so the main script can use them
-                    window._db = {
-                        colRef,
-                        addDoc,
-                        doc: (id) => doc(db, "clients", id),
-                        updateDoc,
-                        deleteDoc,
-                        ready: true
-                    };
-
-                    // ── Real-time listener: every browser sees live updates instantly ──
-                    const q = query(colRef, orderBy("createdAt", "desc"));
-                    onSnapshot(q, (snapshot) => {
-                        window._clients = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                        if (typeof window.renderTable === 'function') {
-                            window.renderTable();
-                            window.updateStats();
-                            // Hide setup banner once data loads fine
-                            const banner = document.getElementById('setupBanner');
-                            if (banner && firebaseConfig.apiKey !== "YOUR_API_KEY") banner.style.display = 'none';
-                        }
-                    }, (err) => {
-                        console.error("Firestore error:", err);
-                        window._dbError = err.message;
-                        if (typeof window.showToast === 'function')
-                            window.showToast('❌', 'Database Error', err.message.slice(0, 60));
-                    });
-
-                    appReady = true;
-                } catch (e) {
-                    window._dbError = e.message;
-                    console.error("Firebase init failed:", e);
-                }
-
-                // Signal to main script that Firebase module loaded
-                window._firebaseLoaded = true;
-                window._firebaseReady = appReady;
-                document.dispatchEvent(new Event('firebase-ready'));
-            </script>
+            }, (err) => {
+                console.error("Firestore error:", err);
+                window._dbError = err.message;
+                if (typeof window.showToast === 'function')
+                    window.showToast('❌', 'Database Error', err.message.slice(0, 60));
+            });
+ 
+            appReady = true;
+        } catch (e) {
+            window._dbError = e.message;
+            console.error("Firebase init failed:", e);
+        }
+ 
+        window._firebaseLoaded = true;
+        window._firebaseReady = appReady;
+        document.dispatchEvent(new Event('firebase-ready'));
+    </script>
     <style>
         :root {
             --bg: #0b0f1a;
@@ -90,13 +85,13 @@
             --radius: 14px;
             --radius-sm: 8px;
         }
-
+ 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-
+ 
         body {
             font-family: 'DM Sans', sans-serif;
             background: var(--bg);
@@ -104,7 +99,7 @@
             min-height: 100vh;
             overflow-x: hidden;
         }
-
+ 
         body::before {
             content: '';
             position: fixed;
@@ -116,7 +111,7 @@
             pointer-events: none;
             z-index: 0;
         }
-
+ 
         /* ── SIDEBAR ── */
         .sidebar {
             position: fixed;
@@ -131,12 +126,12 @@
             z-index: 100;
             padding: 28px 0 20px;
         }
-
+ 
         .logo {
             padding: 0 24px 28px;
             border-bottom: 1px solid var(--border);
         }
-
+ 
         .logo h1 {
             font-family: 'Syne', sans-serif;
             font-size: 1.35rem;
@@ -146,7 +141,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
+ 
         .logo span {
             font-size: 0.72rem;
             color: var(--text2);
@@ -156,12 +151,12 @@
             letter-spacing: 1px;
             text-transform: uppercase;
         }
-
+ 
         .nav {
             padding: 20px 12px;
             flex: 1;
         }
-
+ 
         .nav-item {
             display: flex;
             align-items: center;
@@ -175,31 +170,52 @@
             transition: all 0.2s;
             margin-bottom: 2px;
         }
-
+ 
         .nav-item:hover {
             background: var(--surface2);
             color: var(--text);
         }
-
+ 
         .nav-item.active {
             background: rgba(79, 142, 247, 0.15);
             color: var(--accent);
             font-weight: 500;
         }
-
+ 
         .nav-item .icon {
             font-size: 1.1rem;
             width: 20px;
             text-align: center;
         }
-
+ 
         .sidebar-footer {
             padding: 16px 24px;
             border-top: 1px solid var(--border);
             font-size: 0.75rem;
             color: var(--text3);
         }
-
+ 
+        /* ── DB STATUS ── */
+        .db-status {
+            padding: 8px 24px 0;
+            font-size: 0.72rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+ 
+        .db-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--text3);
+            flex-shrink: 0;
+            transition: background 0.4s;
+        }
+ 
+        .db-dot.connected { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+        .db-dot.error { background: var(--danger); }
+ 
         /* ── MAIN ── */
         .main {
             margin-left: 240px;
@@ -208,7 +224,7 @@
             z-index: 1;
             min-height: 100vh;
         }
-
+ 
         /* ── TOP BAR ── */
         .topbar {
             display: flex;
@@ -217,14 +233,14 @@
             margin-bottom: 32px;
             gap: 16px;
         }
-
+ 
         .page-title {
             font-family: 'Syne', sans-serif;
             font-size: 1.6rem;
             font-weight: 700;
             color: var(--text);
         }
-
+ 
         .page-title span {
             color: var(--text2);
             font-weight: 400;
@@ -232,18 +248,18 @@
             margin-left: 8px;
             font-family: 'DM Sans', sans-serif;
         }
-
+ 
         .topbar-right {
             display: flex;
             align-items: center;
             gap: 12px;
         }
-
+ 
         .search-wrap {
             position: relative;
             width: 320px;
         }
-
+ 
         .search-wrap input {
             width: 100%;
             background: var(--surface2);
@@ -256,16 +272,14 @@
             outline: none;
             transition: all 0.2s;
         }
-
-        .search-wrap input::placeholder {
-            color: var(--text3);
-        }
-
+ 
+        .search-wrap input::placeholder { color: var(--text3); }
+ 
         .search-wrap input:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.12);
         }
-
+ 
         .search-icon {
             position: absolute;
             left: 14px;
@@ -274,7 +288,7 @@
             color: var(--text3);
             font-size: 1rem;
         }
-
+ 
         .btn-add {
             display: flex;
             align-items: center;
@@ -292,12 +306,12 @@
             box-shadow: 0 4px 20px rgba(79, 142, 247, 0.35);
             white-space: nowrap;
         }
-
+ 
         .btn-add:hover {
             transform: translateY(-1px);
             box-shadow: 0 6px 28px rgba(79, 142, 247, 0.45);
         }
-
+ 
         /* ── STATS ── */
         .stats {
             display: grid;
@@ -305,7 +319,7 @@
             gap: 16px;
             margin-bottom: 28px;
         }
-
+ 
         .stat-card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -315,39 +329,24 @@
             overflow: hidden;
             transition: border-color 0.2s;
         }
-
-        .stat-card:hover {
-            border-color: var(--accent);
-        }
-
+ 
+        .stat-card:hover { border-color: var(--accent); }
+ 
         .stat-card::after {
             content: '';
             position: absolute;
-            top: 0;
-            right: 0;
-            width: 80px;
-            height: 80px;
+            top: 0; right: 0;
+            width: 80px; height: 80px;
             border-radius: 50%;
             opacity: 0.08;
             transform: translate(30%, -30%);
         }
-
-        .stat-card:nth-child(1)::after {
-            background: var(--accent);
-        }
-
-        .stat-card:nth-child(2)::after {
-            background: var(--accent2);
-        }
-
-        .stat-card:nth-child(3)::after {
-            background: var(--accent3);
-        }
-
-        .stat-card:nth-child(4)::after {
-            background: var(--warning);
-        }
-
+ 
+        .stat-card:nth-child(1)::after { background: var(--accent); }
+        .stat-card:nth-child(2)::after { background: var(--accent2); }
+        .stat-card:nth-child(3)::after { background: var(--accent3); }
+        .stat-card:nth-child(4)::after { background: var(--warning); }
+ 
         .stat-label {
             font-size: 0.75rem;
             color: var(--text2);
@@ -355,35 +354,24 @@
             letter-spacing: 1px;
             margin-bottom: 10px;
         }
-
+ 
         .stat-value {
             font-family: 'Syne', sans-serif;
             font-size: 2rem;
             font-weight: 700;
         }
-
-        .stat-card:nth-child(1) .stat-value {
-            color: var(--accent);
-        }
-
-        .stat-card:nth-child(2) .stat-value {
-            color: var(--accent2);
-        }
-
-        .stat-card:nth-child(3) .stat-value {
-            color: var(--accent3);
-        }
-
-        .stat-card:nth-child(4) .stat-value {
-            color: var(--warning);
-        }
-
+ 
+        .stat-card:nth-child(1) .stat-value { color: var(--accent); }
+        .stat-card:nth-child(2) .stat-value { color: var(--accent2); }
+        .stat-card:nth-child(3) .stat-value { color: var(--accent3); }
+        .stat-card:nth-child(4) .stat-value { color: var(--warning); }
+ 
         .stat-sub {
             font-size: 0.78rem;
             color: var(--text3);
             margin-top: 4px;
         }
-
+ 
         /* ── TABLE ── */
         .table-wrap {
             background: var(--surface);
@@ -391,7 +379,7 @@
             border-radius: var(--radius);
             overflow: hidden;
         }
-
+ 
         .table-header {
             display: flex;
             align-items: center;
@@ -399,18 +387,15 @@
             padding: 18px 24px;
             border-bottom: 1px solid var(--border);
         }
-
+ 
         .table-title {
             font-family: 'Syne', sans-serif;
             font-size: 1rem;
             font-weight: 600;
         }
-
-        .table-actions {
-            display: flex;
-            gap: 8px;
-        }
-
+ 
+        .table-actions { display: flex; gap: 8px; }
+ 
         .btn-sm {
             background: var(--surface2);
             border: 1px solid var(--border);
@@ -422,17 +407,14 @@
             font-family: 'DM Sans', sans-serif;
             transition: all 0.2s;
         }
-
+ 
         .btn-sm:hover {
             border-color: var(--accent);
             color: var(--accent);
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
+ 
+        table { width: 100%; border-collapse: collapse; }
+ 
         thead th {
             padding: 12px 20px;
             text-align: left;
@@ -444,58 +426,36 @@
             background: rgba(255, 255, 255, 0.02);
             border-bottom: 1px solid var(--border);
         }
-
+ 
         tbody tr {
             border-bottom: 1px solid rgba(31, 45, 71, 0.5);
             transition: background 0.15s;
             cursor: pointer;
         }
-
-        tbody tr:last-child {
-            border-bottom: none;
-        }
-
-        tbody tr:hover {
-            background: rgba(79, 142, 247, 0.05);
-        }
-
+ 
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: rgba(79, 142, 247, 0.05); }
+ 
         tbody td {
             padding: 14px 20px;
             font-size: 0.875rem;
             color: var(--text);
             vertical-align: middle;
         }
-
+ 
         .avatar {
-            width: 34px;
-            height: 34px;
+            width: 34px; height: 34px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             font-family: 'Syne', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: #fff;
-            flex-shrink: 0;
+            font-size: 0.8rem; font-weight: 700;
+            color: #fff; flex-shrink: 0;
         }
-
-        .name-cell {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .name-cell strong {
-            display: block;
-            font-weight: 500;
-        }
-
-        .name-cell small {
-            color: var(--text2);
-            font-size: 0.78rem;
-        }
-
+ 
+        .name-cell { display: flex; align-items: center; gap: 12px; }
+        .name-cell strong { display: block; font-weight: 500; }
+        .name-cell small { color: var(--text2); font-size: 0.78rem; }
+ 
         .badge {
             display: inline-block;
             padding: 3px 10px;
@@ -506,87 +466,80 @@
             color: var(--accent);
             border: 1px solid rgba(79, 142, 247, 0.2);
         }
-
+ 
         .badge-green {
             background: rgba(52, 211, 153, 0.12);
             color: var(--accent3);
             border: 1px solid rgba(52, 211, 153, 0.2);
         }
-
+ 
         .badge-purple {
             background: rgba(167, 139, 250, 0.12);
             color: var(--accent2);
             border: 1px solid rgba(167, 139, 250, 0.2);
         }
-
-        .action-btns {
-            display: flex;
-            gap: 6px;
-        }
-
+ 
+        .action-btns { display: flex; gap: 6px; }
+ 
         .icon-btn {
-            width: 30px;
-            height: 30px;
+            width: 30px; height: 30px;
             border-radius: 6px;
             border: 1px solid var(--border);
             background: transparent;
             color: var(--text2);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             font-size: 0.85rem;
             transition: all 0.15s;
         }
-
+ 
         .icon-btn:hover {
             border-color: var(--accent);
             color: var(--accent);
             background: rgba(79, 142, 247, 0.1);
         }
-
+ 
         .icon-btn.del:hover {
             border-color: var(--danger);
             color: var(--danger);
             background: rgba(248, 113, 113, 0.1);
         }
-
+ 
         .empty-state {
             text-align: center;
             padding: 64px 20px;
             color: var(--text2);
         }
-
-        .empty-icon {
-            font-size: 3rem;
-            margin-bottom: 12px;
-            opacity: 0.4;
-        }
-
+ 
+        .empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+ 
         .empty-state h3 {
             font-family: 'Syne', sans-serif;
             font-size: 1.1rem;
             color: var(--text);
             margin-bottom: 6px;
         }
-
-        .empty-state p {
-            font-size: 0.875rem;
+ 
+        .empty-state p { font-size: 0.875rem; }
+ 
+        /* ── LOADING ── */
+        .loading-state {
+            text-align: center;
+            padding: 64px 20px;
+            color: var(--text2);
         }
-
-        /* ── RUNNING AGE BADGE ── */
-        .running-age {
-            font-size: 0.7rem;
-            color: var(--accent3);
-            background: rgba(52, 211, 153, 0.1);
-            border: 1px solid rgba(52, 211, 153, 0.2);
-            border-radius: 4px;
-            padding: 1px 6px;
-            margin-left: 4px;
-            font-weight: 500;
-            vertical-align: middle;
+ 
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
         }
-
+ 
+        @keyframes spin { to { transform: rotate(360deg); } }
+ 
         /* ── MODAL TABS ── */
         .modal-tabs {
             display: flex;
@@ -594,8 +547,9 @@
             border-bottom: 1px solid var(--border);
             padding: 0 28px;
             background: var(--surface);
+            overflow-x: auto;
         }
-
+ 
         .modal-tab {
             padding: 13px 20px;
             font-size: 0.85rem;
@@ -607,25 +561,18 @@
             font-weight: 400;
             white-space: nowrap;
         }
-
-        .modal-tab:hover {
-            color: var(--text);
-        }
-
+ 
+        .modal-tab:hover { color: var(--text); }
+ 
         .modal-tab.active {
             color: var(--accent);
             border-bottom-color: var(--accent);
             font-weight: 500;
         }
-
-        .tab-panel {
-            display: none;
-        }
-
-        .tab-panel.active {
-            display: block;
-        }
-
+ 
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+ 
         /* ── MODAL ── */
         .overlay {
             position: fixed;
@@ -640,12 +587,12 @@
             pointer-events: none;
             transition: opacity 0.25s;
         }
-
+ 
         .overlay.open {
             opacity: 1;
             pointer-events: all;
         }
-
+ 
         .modal {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -658,11 +605,11 @@
             transform: translateY(20px) scale(0.97);
             transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-
+ 
         .overlay.open .modal {
             transform: translateY(0) scale(1);
         }
-
+ 
         .modal-head {
             display: flex;
             align-items: center;
@@ -674,64 +621,48 @@
             background: var(--surface);
             z-index: 1;
         }
-
+ 
         .modal-title {
             font-family: 'Syne', sans-serif;
             font-size: 1.15rem;
             font-weight: 700;
         }
-
+ 
         .modal-subtitle {
             font-size: 0.8rem;
             color: var(--text2);
             margin-top: 2px;
         }
-
+ 
         .close-btn {
-            width: 32px;
-            height: 32px;
+            width: 32px; height: 32px;
             border-radius: 8px;
             background: var(--surface2);
             border: 1px solid var(--border);
             color: var(--text2);
             cursor: pointer;
             font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             transition: all 0.2s;
         }
-
+ 
         .close-btn:hover {
             background: var(--danger);
             color: #fff;
             border-color: var(--danger);
         }
-
-        .modal-body {
-            padding: 24px 28px;
-        }
-
+ 
+        .modal-body { padding: 24px 28px; }
+ 
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 18px;
         }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .form-group.full {
-            grid-column: 1 / -1;
-        }
-
-        .form-group.col3 {
-            grid-column: span 1;
-        }
-
+ 
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+ 
         label {
             font-size: 0.78rem;
             font-weight: 500;
@@ -739,10 +670,8 @@
             text-transform: uppercase;
             letter-spacing: 0.6px;
         }
-
-        input,
-        select,
-        textarea {
+ 
+        input, select, textarea {
             background: var(--surface2);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
@@ -754,51 +683,37 @@
             transition: all 0.2s;
             width: 100%;
         }
-
-        textarea {
-            resize: vertical;
-            min-height: 70px;
-        }
-
-        input::placeholder,
-        textarea::placeholder {
-            color: var(--text3);
-        }
-
-        input:focus,
-        select:focus,
-        textarea:focus {
+ 
+        textarea { resize: vertical; min-height: 70px; }
+ 
+        input::placeholder, textarea::placeholder { color: var(--text3); }
+ 
+        input:focus, select:focus, textarea:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.12);
             background: rgba(26, 34, 54, 0.9);
         }
-
-        select option {
-            background: var(--surface2);
-        }
-
+ 
+        select option { background: var(--surface2); }
+ 
         .input-hint {
             font-size: 0.73rem;
             color: var(--text3);
             margin-top: 2px;
         }
-
+ 
         .input-error {
             font-size: 0.73rem;
             color: var(--danger);
             margin-top: 2px;
             display: none;
         }
-
+ 
         .form-group.error input,
-        .form-group.error select {
-            border-color: var(--danger);
-        }
-
-        .form-group.error .input-error {
-            display: block;
-        }
-
+        .form-group.error select { border-color: var(--danger); }
+ 
+        .form-group.error .input-error { display: block; }
+ 
         .section-divider {
             grid-column: 1 / -1;
             display: flex;
@@ -806,7 +721,7 @@
             gap: 12px;
             margin: 4px 0;
         }
-
+ 
         .section-divider span {
             font-size: 0.75rem;
             color: var(--text3);
@@ -814,7 +729,7 @@
             text-transform: uppercase;
             letter-spacing: 0.8px;
         }
-
+ 
         .section-divider::before,
         .section-divider::after {
             content: '';
@@ -822,7 +737,7 @@
             height: 1px;
             background: var(--border);
         }
-
+ 
         .modal-footer {
             display: flex;
             align-items: center;
@@ -835,7 +750,7 @@
             background: var(--surface);
             z-index: 1;
         }
-
+ 
         .btn-cancel {
             background: transparent;
             border: 1px solid var(--border);
@@ -847,12 +762,12 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-
+ 
         .btn-cancel:hover {
             border-color: var(--text2);
             color: var(--text);
         }
-
+ 
         .btn-save {
             background: linear-gradient(135deg, var(--accent), #3b72d8);
             border: none;
@@ -869,19 +784,20 @@
             align-items: center;
             gap: 8px;
         }
-
+ 
         .btn-save:hover {
             transform: translateY(-1px);
             box-shadow: 0 6px 22px rgba(79, 142, 247, 0.4);
         }
-
-        /* Tab nav within modal footer */
-        .tab-nav-btns {
-            display: flex;
-            gap: 8px;
-            margin-right: auto;
+ 
+        .btn-save:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
-
+ 
+        .tab-nav-btns { display: flex; gap: 8px; margin-right: auto; }
+ 
         .btn-tab-nav {
             background: var(--surface2);
             border: 1px solid var(--border);
@@ -893,12 +809,12 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-
+ 
         .btn-tab-nav:hover {
             border-color: var(--accent);
             color: var(--accent);
         }
-
+ 
         /* ── VIEW MODAL ── */
         .view-modal {
             background: var(--surface);
@@ -912,11 +828,9 @@
             transform: translateY(20px) scale(0.97);
             transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-
-        .overlay.open .view-modal {
-            transform: translateY(0) scale(1);
-        }
-
+ 
+        .overlay.open .view-modal { transform: translateY(0) scale(1); }
+ 
         .view-banner {
             padding: 32px 28px 24px;
             background: linear-gradient(135deg, rgba(79, 142, 247, 0.12), rgba(167, 139, 250, 0.08));
@@ -926,49 +840,36 @@
             gap: 18px;
             position: relative;
         }
-
+ 
         .view-avatar {
-            width: 64px;
-            height: 64px;
+            width: 64px; height: 64px;
             border-radius: 50%;
             font-family: 'Syne', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 1.5rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
             color: #fff;
             border: 3px solid rgba(255, 255, 255, 0.15);
             flex-shrink: 0;
         }
-
+ 
         .view-name {
             font-family: 'Syne', sans-serif;
             font-size: 1.3rem;
             font-weight: 700;
         }
-
+ 
         .view-id {
             font-size: 0.78rem;
             color: var(--text2);
             margin-top: 3px;
             font-family: 'DM Sans', monospace;
         }
-
-        .view-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-        }
-
-        .view-body {
-            padding: 24px 28px;
-        }
-
-        .view-section {
-            margin-bottom: 20px;
-        }
-
+ 
+        .view-close { position: absolute; top: 16px; right: 16px; }
+        .view-body { padding: 24px 28px; }
+ 
+        .view-section { margin-bottom: 20px; }
+ 
         .view-section-title {
             font-size: 0.73rem;
             color: var(--text3);
@@ -976,23 +877,21 @@
             letter-spacing: 1px;
             margin-bottom: 12px;
         }
-
+ 
         .view-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
         }
-
+ 
         .view-field {
             background: var(--surface2);
             border-radius: var(--radius-sm);
             padding: 12px 14px;
         }
-
-        .view-field.full {
-            grid-column: 1 / -1;
-        }
-
+ 
+        .view-field.full { grid-column: 1 / -1; }
+ 
         .view-field-label {
             font-size: 0.7rem;
             color: var(--text3);
@@ -1000,13 +899,9 @@
             letter-spacing: 0.6px;
             margin-bottom: 4px;
         }
-
-        .view-field-value {
-            font-size: 0.9rem;
-            color: var(--text);
-            font-weight: 400;
-        }
-
+ 
+        .view-field-value { font-size: 0.9rem; color: var(--text); font-weight: 400; }
+ 
         .view-poc-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -1017,8 +912,7 @@
             color: var(--accent2);
             border: 1px solid rgba(167, 139, 250, 0.25);
         }
-
-        /* Running age display */
+ 
         .running-age-display {
             display: inline-block;
             background: rgba(52, 211, 153, 0.12);
@@ -1031,12 +925,11 @@
             color: var(--accent3);
             margin-top: 4px;
         }
-
+ 
         /* ── TOAST ── */
         .toast {
             position: fixed;
-            bottom: 28px;
-            right: 28px;
+            bottom: 28px; right: 28px;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 12px;
@@ -1051,84 +944,42 @@
             transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
             min-width: 260px;
         }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .toast-icon {
-            font-size: 1.3rem;
-        }
-
-        .toast-msg {
-            font-size: 0.875rem;
-        }
-
-        .toast-msg strong {
-            display: block;
-            font-weight: 500;
-        }
-
-        .toast-msg span {
-            font-size: 0.78rem;
-            color: var(--text2);
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text3);
-        }
-
+ 
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-icon { font-size: 1.3rem; }
+ 
+        .toast-msg { font-size: 0.875rem; }
+        .toast-msg strong { display: block; font-weight: 500; }
+        .toast-msg span { font-size: 0.78rem; color: var(--text2); }
+ 
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+ 
         @media (max-width: 900px) {
-            .sidebar {
-                width: 60px;
-            }
-
-            .nav-item span,
+            .sidebar { width: 60px; }
+ 
+            .nav-item span:not(.icon),
             .logo h1,
             .logo span,
-            .sidebar-footer {
-                display: none;
-            }
-
-            .main {
-                margin-left: 60px;
-                padding: 20px 16px;
-            }
-
-            .stats {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .search-wrap {
-                width: 200px;
-            }
-
+            .sidebar-footer,
+            .db-status span:not(.db-dot) { display: none; }
+ 
+            .main { margin-left: 60px; padding: 20px 16px; }
+            .stats { grid-template-columns: 1fr 1fr; }
+            .search-wrap { width: 200px; }
+ 
             table thead th:nth-child(4),
             table tbody td:nth-child(4),
             table thead th:nth-child(5),
-            table tbody td:nth-child(5) {
-                display: none;
-            }
+            table tbody td:nth-child(5) { display: none; }
         }
     </style>
 </head>
-
+ 
 <body>
-
+ 
     <!-- SIDEBAR -->
     <nav class="sidebar">
         <div class="logo">
@@ -1141,9 +992,13 @@
             <div class="nav-item"><span class="icon">📁</span><span>Export</span></div>
             <div class="nav-item"><span class="icon">⚙️</span><span>Settings</span></div>
         </div>
-        <div class="sidebar-footer">v2.0 · LocalDB</div>
+        <div class="db-status">
+            <span class="db-dot" id="dbDot"></span>
+            <span id="dbStatusText" style="color:var(--text3);font-size:0.7rem;">Connecting…</span>
+        </div>
+        <div class="sidebar-footer">v2.1 · Firebase</div>
     </nav>
-
+ 
     <!-- MAIN -->
     <main class="main">
         <div class="topbar">
@@ -1159,7 +1014,7 @@
                 <button class="btn-add" onclick="openAddModal()"><span>＋</span> Add Client</button>
             </div>
         </div>
-
+ 
         <!-- STATS -->
         <div class="stats">
             <div class="stat-card">
@@ -1183,7 +1038,7 @@
                 <div class="stat-sub">Matching records</div>
             </div>
         </div>
-
+ 
         <!-- TABLE -->
         <div class="table-wrap">
             <div class="table-header">
@@ -1194,15 +1049,14 @@
                 </div>
             </div>
             <div id="tableContainer">
-                <div class="empty-state">
-                    <div class="empty-icon">📋</div>
-                    <h3>No Clients Yet</h3>
-                    <p>Click "Add Client" to start adding your first client record.</p>
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p style="color:var(--text2);font-size:0.875rem;">Connecting to database…</p>
                 </div>
             </div>
         </div>
     </main>
-
+ 
     <!-- ADD / EDIT MODAL -->
     <div class="overlay" id="addOverlay" onclick="handleOverlayClick(event)">
         <div class="modal" id="addModal">
@@ -1213,7 +1067,7 @@
                 </div>
                 <button class="close-btn" onclick="closeAddModal()">✕</button>
             </div>
-
+ 
             <!-- TAB NAVIGATION -->
             <div class="modal-tabs">
                 <div class="modal-tab active" onclick="switchTab(0)" id="tab0">👤 Personal</div>
@@ -1221,47 +1075,47 @@
                 <div class="modal-tab" onclick="switchTab(2)" id="tab2">📱 Secondary Contact</div>
                 <div class="modal-tab" onclick="switchTab(3)" id="tab3">📍 Location & Source</div>
             </div>
-
+ 
             <div class="modal-body">
-
+ 
                 <!-- TAB 0: PERSONAL -->
                 <div class="tab-panel active" id="panel0">
                     <div class="form-grid">
                         <div class="section-divider"><span>Personal Information</span></div>
-
+ 
                         <div class="form-group full" id="fg-name">
                             <label>Full Name *</label>
                             <input type="text" id="fName" placeholder="e.g. Arjun Sharma"
                                 oninput="clearErr('fg-name')" />
                             <div class="input-error">Name is required</div>
                         </div>
-
+ 
                         <div class="form-group" id="fg-dob">
                             <label>Date of Birth *</label>
                             <input type="date" id="fDOB" onchange="autoCalcAge()" />
                             <div class="input-error">DOB is required</div>
                         </div>
-
+ 
                         <div class="form-group">
                             <label>Age</label>
                             <input type="number" id="fAge" placeholder="Auto-calculated" min="0" max="150" />
                             <div class="input-hint">Auto-filled from DOB</div>
                         </div>
-
+ 
                         <div class="form-group">
                             <label>Birth Time</label>
                             <input type="time" id="fBirthTime" />
                         </div>
-
+ 
                         <div class="form-group" id="fg-bplace">
                             <label>Birth Place *</label>
                             <input type="text" id="fBirthPlace" placeholder="e.g. Mumbai, Maharashtra"
                                 oninput="clearErr('fg-bplace')" />
                             <div class="input-error">Birth place is required</div>
                         </div>
-
+ 
                         <div class="section-divider"><span>Running Age</span></div>
-
+ 
                         <div class="form-group full">
                             <label>Current Running Age</label>
                             <div id="runningAgeDisplay" style="color:var(--text3);font-size:0.85rem;padding:4px 0;">
@@ -1271,32 +1125,32 @@
                         </div>
                     </div>
                 </div>
-
+ 
                 <!-- TAB 1: PRIMARY CONTACT -->
                 <div class="tab-panel" id="panel1">
                     <div class="form-grid">
                         <div class="section-divider"><span>Primary Contact</span></div>
-
+ 
                         <div class="form-group" id="fg-mobile">
                             <label>Mobile Number *</label>
                             <input type="tel" id="fMobile" placeholder="e.g. 9876543210" maxlength="15"
                                 oninput="clearErr('fg-mobile')" />
                             <div class="input-error">Valid mobile number required</div>
                         </div>
-
+ 
                         <div class="form-group" id="fg-email">
                             <label>Email ID *</label>
                             <input type="email" id="fEmail" placeholder="e.g. arjun@email.com"
                                 oninput="clearErr('fg-email')" />
                             <div class="input-error">Valid email required</div>
                         </div>
-
+ 
                         <div class="form-group">
                             <label>WhatsApp Number</label>
                             <input type="tel" id="fWhatsapp" placeholder="Same as mobile or different" maxlength="15" />
                             <div class="input-hint">Leave blank if same as mobile</div>
                         </div>
-
+ 
                         <div class="form-group">
                             <label>Preferred Contact Time</label>
                             <select id="fContactTime">
@@ -1310,17 +1164,17 @@
                         </div>
                     </div>
                 </div>
-
+ 
                 <!-- TAB 2: SECONDARY CONTACT -->
                 <div class="tab-panel" id="panel2">
                     <div class="form-grid">
                         <div class="section-divider"><span>Secondary Contact</span></div>
-
+ 
                         <div class="form-group">
                             <label>Secondary Name</label>
                             <input type="text" id="fSecName" placeholder="e.g. Spouse / Parent name" />
                         </div>
-
+ 
                         <div class="form-group">
                             <label>Relation</label>
                             <select id="fSecRelation">
@@ -1334,29 +1188,29 @@
                                 <option value="Other">Other</option>
                             </select>
                         </div>
-
+ 
                         <div class="form-group">
                             <label>Secondary Mobile</label>
                             <input type="tel" id="fSecMobile" placeholder="e.g. 9876543210" maxlength="15" />
                         </div>
-
+ 
                         <div class="form-group">
                             <label>Secondary Email</label>
                             <input type="email" id="fSecEmail" placeholder="e.g. contact@email.com" />
                         </div>
-
+ 
                         <div class="form-group full">
                             <label>Secondary Notes</label>
                             <textarea id="fSecNotes" placeholder="Any additional notes about this contact…"></textarea>
                         </div>
                     </div>
                 </div>
-
+ 
                 <!-- TAB 3: LOCATION & SOURCE -->
                 <div class="tab-panel" id="panel3">
                     <div class="form-grid">
                         <div class="section-divider"><span>Location Contacted From</span></div>
-
+ 
                         <div class="form-group full" id="fg-contactedFrom">
                             <label>Client's Location (Contacted From) *</label>
                             <input type="text" id="fContactedFrom" placeholder="e.g. Hyderabad, Telangana"
@@ -1364,9 +1218,9 @@
                             <div class="input-hint">City / area from where this client contacted you</div>
                             <div class="input-error">Please enter the location</div>
                         </div>
-
+ 
                         <div class="section-divider"><span>House Direction</span></div>
-
+ 
                         <div class="form-group">
                             <label>House Facing Direction</label>
                             <select id="fHouseDirection">
@@ -1382,7 +1236,7 @@
                             </select>
                             <div class="input-hint">Direction the main entrance faces</div>
                         </div>
-
+ 
                         <div class="form-group">
                             <label>House Type</label>
                             <select id="fHouseType">
@@ -1396,15 +1250,15 @@
                                 <option value="Other">Other</option>
                             </select>
                         </div>
-
+ 
                         <div class="form-group full">
                             <label>House Address</label>
                             <textarea id="fHouseAddress"
                                 placeholder="Full address where the client currently lives…"></textarea>
                         </div>
-
+ 
                         <div class="section-divider"><span>Point of Contact / How They Found You</span></div>
-
+ 
                         <div class="form-group" id="fg-poc">
                             <label>Point of Contact *</label>
                             <select id="fPOC" oninput="clearErr('fg-poc')">
@@ -1421,7 +1275,7 @@
                             </select>
                             <div class="input-error">Please select point of contact</div>
                         </div>
-
+ 
                         <div class="form-group">
                             <label>Referred By (If Reference)</label>
                             <input type="text" id="fReferredBy" placeholder="Name of the person who referred" />
@@ -1429,20 +1283,20 @@
                         </div>
                     </div>
                 </div>
-
+ 
             </div><!-- end modal-body -->
-
+ 
             <div class="modal-footer">
                 <div class="tab-nav-btns">
                     <button class="btn-tab-nav" onclick="prevTab()">← Previous</button>
                     <button class="btn-tab-nav" onclick="nextTab()">Next →</button>
                 </div>
                 <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
-                <button class="btn-save" onclick="saveClient()"><span>💾</span> Save Client</button>
+                <button class="btn-save" id="btnSave" onclick="saveClient()"><span>💾</span> Save Client</button>
             </div>
         </div>
     </div>
-
+ 
     <!-- VIEW MODAL -->
     <div class="overlay" id="viewOverlay" onclick="handleViewOverlayClick(event)">
         <div class="view-modal" id="viewModal">
@@ -1457,7 +1311,7 @@
             <div class="view-body" id="vBody"></div>
         </div>
     </div>
-
+ 
     <!-- TOAST -->
     <div class="toast" id="toast">
         <div class="toast-icon" id="toastIcon">✅</div>
@@ -1466,25 +1320,66 @@
             <span id="toastSub"></span>
         </div>
     </div>
-
+ 
     <script>
-        // ── DB ──
-        const DB_KEY = 'clientvault_db_v2';
-        function getDB() { try { return JSON.parse(localStorage.getItem(DB_KEY)) || []; } catch { return []; } }
-        function saveDB(data) { localStorage.setItem(DB_KEY, JSON.stringify(data)); }
-
         // ── STATE ──
         let editingId = null;
         let currentSearch = '';
         let activeTab = 0;
-
-        window.onload = () => { renderTable(); updateStats(); };
-
+ 
+        // ── WAIT FOR FIREBASE ──
+        function waitForFirebase(cb) {
+            if (window._db && window._db.ready) { cb(); return; }
+            document.addEventListener('firebase-ready', () => {
+                if (window._firebaseReady) cb();
+                else {
+                    setDbStatus('error', 'DB Error');
+                    showToast('❌', 'Firebase Failed', window._dbError || 'Check config');
+                }
+            });
+        }
+ 
+        // ── DB STATUS INDICATOR ──
+        function setDbStatus(state, label) {
+            const dot = document.getElementById('dbDot');
+            const txt = document.getElementById('dbStatusText');
+            dot.className = 'db-dot ' + state;
+            txt.textContent = label;
+        }
+ 
+        // Detect first successful snapshot
+        let dbConnected = false;
+        const _origOnSnapshot = () => {
+            if (!dbConnected) {
+                dbConnected = true;
+                setDbStatus('connected', 'Connected');
+            }
+        };
+ 
+        // ── HELPERS ──
+        function escHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        function formatDate(iso) {
+            return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+        function formatDOB(dob) {
+            if (!dob) return '—';
+            const [y, m, d] = dob.split('-');
+            return `${d}/${m}/${y}`;
+        }
+ 
         // ── COLORS ──
         const COLORS = ['#4f8ef7', '#a78bfa', '#34d399', '#fbbf24', '#f472b6', '#60a5fa', '#fb923c', '#4ade80', '#e879f9', '#38bdf8'];
-        function colorFor(str) { let h = 0; for (let c of str) h = (h << 5) - h + c.charCodeAt(0); return COLORS[Math.abs(h) % COLORS.length]; }
-        function initials(name) { return name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join(''); }
-
+        function colorFor(str) {
+            let h = 0;
+            for (let c of str) h = (h << 5) - h + c.charCodeAt(0);
+            return COLORS[Math.abs(h) % COLORS.length];
+        }
+        function initials(name) {
+            return name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+        }
+ 
         // ── RUNNING AGE ──
         function calcRunningAge(dob) {
             if (!dob) return null;
@@ -1497,38 +1392,65 @@
             if (months < 0) { years--; months += 12; }
             return { years, months, days };
         }
-
+ 
         function runningAgeStr(dob) {
             const r = calcRunningAge(dob);
             if (!r) return '—';
             return `${r.years} yrs, ${r.months} months, ${r.days} days`;
         }
-
+ 
         // ── STATS ──
-        function updateStats() {
-            const db = getDB();
+        window.updateStats = function () {
+            const db = window._clients || [];
             const today = new Date().toDateString();
             const thisMonth = new Date().getMonth() + '-' + new Date().getFullYear();
             document.getElementById('statTotal').textContent = db.length;
-            document.getElementById('statToday').textContent = db.filter(c => new Date(c.createdAt).toDateString() === today).length;
-            document.getElementById('statMonth').textContent = db.filter(c => { const d = new Date(c.createdAt); return d.getMonth() + '-' + d.getFullYear() === thisMonth; }).length;
+            document.getElementById('statToday').textContent = db.filter(c => {
+                const ts = c.createdAt;
+                const d = ts && ts.toDate ? ts.toDate() : new Date(ts);
+                return d.toDateString() === today;
+            }).length;
+            document.getElementById('statMonth').textContent = db.filter(c => {
+                const ts = c.createdAt;
+                const d = ts && ts.toDate ? ts.toDate() : new Date(ts);
+                return d.getMonth() + '-' + d.getFullYear() === thisMonth;
+            }).length;
             document.getElementById('clientCount').textContent = db.length > 0 ? `· ${db.length} records` : '';
-        }
-
+        };
+ 
         // ── POC ICON ──
         function pocIcon(poc) {
             const map = { 'Directly': '🤝', 'Reference': '👥', 'WhatsApp': '💬', 'Facebook': '📘', 'Instagram': '📸', 'Social Media': '📱', 'Google Ads': '📢', 'AstroTalk': '🔮', 'Other': '🔗' };
             return map[poc] || '📌';
         }
-
+ 
+        // ── FORMAT TIMESTAMP ──
+        function tsToDate(ts) {
+            if (!ts) return new Date();
+            if (ts.toDate) return ts.toDate();
+            return new Date(ts);
+        }
+ 
         // ── RENDER TABLE ──
-        function renderTable(data) {
-            const db = data || getDB();
+        window.renderTable = function (data) {
+            // Mark DB as connected on first render
+            if (!dbConnected) {
+                dbConnected = true;
+                setDbStatus('connected', 'Connected');
+            }
+ 
+            const db = data || window._clients || [];
             const container = document.getElementById('tableContainer');
+ 
             if (db.length === 0) {
-                container.innerHTML = `<div class="empty-state"><div class="empty-icon">${currentSearch ? '🔎' : '📋'}</div><h3>${currentSearch ? 'No Results Found' : 'No Clients Yet'}</h3><p>${currentSearch ? `No clients match "${currentSearch}"` : 'Click "Add Client" to start adding your first client record.'}</p></div>`;
+                container.innerHTML = `<div class="empty-state">
+                    <div class="empty-icon">${currentSearch ? '🔎' : '📋'}</div>
+                    <h3>${currentSearch ? 'No Results Found' : 'No Clients Yet'}</h3>
+                    <p>${currentSearch ? `No clients match "${currentSearch}"` : 'Click "Add Client" to start adding your first client record.'}</p>
+                </div>`;
                 return;
             }
+ 
             container.innerHTML = `<table>
   <thead><tr>
     <th>Client</th>
@@ -1545,7 +1467,7 @@
     <tr onclick="viewClient('${c.id}')">
       <td><div class="name-cell">
         <div class="avatar" style="background:${colorFor(c.name)}">${initials(c.name)}</div>
-        <div><strong>${escHtml(c.name)}</strong><small>Added ${formatDate(c.createdAt)}</small></div>
+        <div><strong>${escHtml(c.name)}</strong><small>Added ${formatDate(tsToDate(c.createdAt))}</small></div>
       </div></td>
       <td>${escHtml(c.mobile)}</td>
       <td>${escHtml(c.birthPlace)}</td>
@@ -1560,26 +1482,30 @@
       </div></td>
     </tr>`).join('')}
   </tbody></table>`;
-        }
-
+        };
+ 
         // ── SEARCH ──
         function handleSearch() {
             const q = document.getElementById('searchInput').value.trim().toLowerCase();
             currentSearch = q;
-            const db = getDB();
-            if (!q) { document.getElementById('statSearch').textContent = '—'; renderTable(); return; }
+            const db = window._clients || [];
+            if (!q) {
+                document.getElementById('statSearch').textContent = '—';
+                renderTable();
+                return;
+            }
             const filtered = db.filter(c =>
-                c.name.toLowerCase().includes(q) ||
-                c.email.toLowerCase().includes(q) ||
-                c.mobile.includes(q) ||
-                c.birthPlace.toLowerCase().includes(q) ||
+                (c.name || '').toLowerCase().includes(q) ||
+                (c.email || '').toLowerCase().includes(q) ||
+                (c.mobile || '').includes(q) ||
+                (c.birthPlace || '').toLowerCase().includes(q) ||
                 (c.contactedFrom || '').toLowerCase().includes(q) ||
                 (c.poc || '').toLowerCase().includes(q)
             );
             document.getElementById('statSearch').textContent = filtered.length;
             renderTable(filtered);
         }
-
+ 
         // ── TABS ──
         function switchTab(n) {
             activeTab = n;
@@ -1590,7 +1516,7 @@
         }
         function nextTab() { if (activeTab < 3) switchTab(activeTab + 1); }
         function prevTab() { if (activeTab > 0) switchTab(activeTab - 1); }
-
+ 
         // ── MODAL ──
         function openAddModal() {
             editingId = null;
@@ -1601,40 +1527,45 @@
             document.getElementById('addOverlay').classList.add('open');
             setTimeout(() => document.getElementById('fName').focus(), 300);
         }
+ 
         function closeAddModal() {
             document.getElementById('addOverlay').classList.remove('open');
-            clearForm(); editingId = null;
+            clearForm();
+            editingId = null;
         }
-        function handleOverlayClick(e) { if (e.target === document.getElementById('addOverlay')) closeAddModal(); }
-
+ 
+        function handleOverlayClick(e) {
+            if (e.target === document.getElementById('addOverlay')) closeAddModal();
+        }
+ 
         function clearForm() {
-            const ids = ['fName', 'fDOB', 'fAge', 'fBirthTime', 'fBirthPlace', 'fMobile', 'fEmail', 'fWhatsapp', 'fContactTime',
-                'fSecName', 'fSecMobile', 'fSecEmail', 'fSecNotes', 'fContactedFrom', 'fHouseDirection',
-                'fHouseType', 'fHouseAddress', 'fPOC', 'fReferredBy', 'fSecRelation'];
+            const ids = ['fName', 'fDOB', 'fAge', 'fBirthTime', 'fBirthPlace', 'fMobile', 'fEmail', 'fWhatsapp',
+                'fContactTime', 'fSecName', 'fSecMobile', 'fSecEmail', 'fSecNotes', 'fContactedFrom',
+                'fHouseDirection', 'fHouseType', 'fHouseAddress', 'fPOC', 'fReferredBy', 'fSecRelation'];
             ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
             ['fg-name', 'fg-dob', 'fg-bplace', 'fg-mobile', 'fg-email', 'fg-contactedFrom', 'fg-poc'].forEach(id => {
                 document.getElementById(id)?.classList.remove('error');
             });
             document.getElementById('runningAgeDisplay').innerHTML = '<span style="color:var(--text3)">— Enter DOB to calculate</span>';
         }
-
+ 
         function autoCalcAge() {
             const dob = document.getElementById('fDOB').value;
             if (!dob) return;
-            const today = new Date(); const b = new Date(dob);
+            const today = new Date();
+            const b = new Date(dob);
             let age = today.getFullYear() - b.getFullYear();
             if (today.getMonth() < b.getMonth() || (today.getMonth() === b.getMonth() && today.getDate() < b.getDate())) age--;
             document.getElementById('fAge').value = age >= 0 ? age : '';
-
             const r = calcRunningAge(dob);
             if (r) {
                 document.getElementById('runningAgeDisplay').innerHTML =
                     `<div class="running-age-display">🎂 ${r.years} years, ${r.months} months &amp; ${r.days} days</div>`;
             }
         }
-
+ 
         function clearErr(id) { document.getElementById(id)?.classList.remove('error'); }
-
+ 
         // ── VALIDATE ──
         function validate() {
             let ok = true;
@@ -1652,7 +1583,6 @@
                 if (!test(val)) { document.getElementById(fg).classList.add('error'); ok = false; }
             });
             if (!ok) {
-                // Switch to the first tab that has errors
                 if (document.getElementById('fg-name').classList.contains('error') ||
                     document.getElementById('fg-dob').classList.contains('error') ||
                     document.getElementById('fg-bplace').classList.contains('error')) { switchTab(0); }
@@ -1663,109 +1593,124 @@
             }
             return ok;
         }
-
-        // ── SAVE ──
-        function saveClient() {
-            if (!validate()) { showToast('⚠️', 'Validation Error', 'Please fill all required fields correctly'); return; }
-            const db = getDB();
+ 
+        // ── SAVE (Firestore) ──
+        async function saveClient() {
+            if (!validate()) {
+                showToast('⚠️', 'Validation Error', 'Please fill all required fields correctly');
+                return;
+            }
+ 
+            const btn = document.getElementById('btnSave');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span> Saving…';
+ 
             const record = {
-                id: editingId || ('CV' + Date.now()),
                 name: document.getElementById('fName').value.trim(),
                 dob: document.getElementById('fDOB').value,
                 age: document.getElementById('fAge').value,
                 birthTime: document.getElementById('fBirthTime').value,
                 birthPlace: document.getElementById('fBirthPlace').value.trim(),
-                // Primary contact
                 mobile: document.getElementById('fMobile').value.trim(),
                 email: document.getElementById('fEmail').value.trim(),
                 whatsapp: document.getElementById('fWhatsapp').value.trim(),
                 contactTime: document.getElementById('fContactTime').value,
-                // Secondary contact
                 secName: document.getElementById('fSecName').value.trim(),
                 secRelation: document.getElementById('fSecRelation').value,
                 secMobile: document.getElementById('fSecMobile').value.trim(),
                 secEmail: document.getElementById('fSecEmail').value.trim(),
                 secNotes: document.getElementById('fSecNotes').value.trim(),
-                // Location & Source
                 contactedFrom: document.getElementById('fContactedFrom').value.trim(),
                 houseDirection: document.getElementById('fHouseDirection').value,
                 houseType: document.getElementById('fHouseType').value,
                 houseAddress: document.getElementById('fHouseAddress').value.trim(),
                 poc: document.getElementById('fPOC').value,
                 referredBy: document.getElementById('fReferredBy').value.trim(),
-                // Meta
-                createdAt: editingId ? (db.find(c => c.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
-
-            if (editingId) {
-                const idx = db.findIndex(c => c.id === editingId);
-                if (idx !== -1) db[idx] = record;
-                showToast('✏️', 'Client Updated', `${record.name}'s details have been updated`);
-            } else {
-                db.unshift(record);
-                showToast('✅', 'Client Saved', `${record.name} has been added successfully`);
+ 
+            try {
+                if (editingId) {
+                    // UPDATE existing doc
+                    await window._db.updateDoc(window._db.doc(editingId), record);
+                    showToast('✏️', 'Client Updated', `${record.name}'s details have been updated`);
+                } else {
+                    // ADD new doc
+                    record.createdAt = new Date().toISOString();
+                    await window._db.addDoc(window._db.colRef, record);
+                    showToast('✅', 'Client Saved', `${record.name} has been added successfully`);
+                }
+                closeAddModal();
+            } catch (err) {
+                console.error('Save error:', err);
+                showToast('❌', 'Save Failed', err.message.slice(0, 60));
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>💾</span> Save Client';
             }
-            saveDB(db); closeAddModal(); renderTable(); updateStats();
-            if (currentSearch) handleSearch();
         }
-
+ 
         // ── EDIT ──
         function editClient(id) {
-            const db = getDB(); const c = db.find(x => x.id === id);
+            const db = window._clients || [];
+            const c = db.find(x => x.id === id);
             if (!c) return;
             editingId = id;
             document.getElementById('modalTitle').textContent = 'Edit Client';
             document.getElementById('modalSubtitle').textContent = `Editing record for ${c.name}`;
-            document.getElementById('fName').value = c.name || '';
-            document.getElementById('fDOB').value = c.dob || '';
-            document.getElementById('fAge').value = c.age || '';
-            document.getElementById('fBirthTime').value = c.birthTime || '';
-            document.getElementById('fBirthPlace').value = c.birthPlace || '';
-            document.getElementById('fMobile').value = c.mobile || '';
-            document.getElementById('fEmail').value = c.email || '';
-            document.getElementById('fWhatsapp').value = c.whatsapp || '';
-            document.getElementById('fContactTime').value = c.contactTime || '';
-            document.getElementById('fSecName').value = c.secName || '';
-            document.getElementById('fSecRelation').value = c.secRelation || '';
-            document.getElementById('fSecMobile').value = c.secMobile || '';
-            document.getElementById('fSecEmail').value = c.secEmail || '';
-            document.getElementById('fSecNotes').value = c.secNotes || '';
-            document.getElementById('fContactedFrom').value = c.contactedFrom || '';
-            document.getElementById('fHouseDirection').value = c.houseDirection || '';
-            document.getElementById('fHouseType').value = c.houseType || '';
-            document.getElementById('fHouseAddress').value = c.houseAddress || '';
-            document.getElementById('fPOC').value = c.poc || '';
-            document.getElementById('fReferredBy').value = c.referredBy || '';
+ 
+            const fields = {
+                fName: c.name, fDOB: c.dob, fAge: c.age, fBirthTime: c.birthTime,
+                fBirthPlace: c.birthPlace, fMobile: c.mobile, fEmail: c.email,
+                fWhatsapp: c.whatsapp, fContactTime: c.contactTime,
+                fSecName: c.secName, fSecRelation: c.secRelation, fSecMobile: c.secMobile,
+                fSecEmail: c.secEmail, fSecNotes: c.secNotes, fContactedFrom: c.contactedFrom,
+                fHouseDirection: c.houseDirection, fHouseType: c.houseType,
+                fHouseAddress: c.houseAddress, fPOC: c.poc, fReferredBy: c.referredBy
+            };
+ 
+            Object.entries(fields).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val || '';
+            });
+ 
             if (c.dob) autoCalcAge();
             switchTab(0);
             document.getElementById('addOverlay').classList.add('open');
         }
-
+ 
         // ── DELETE ──
-        function deleteClient(id) {
-            const db = getDB(); const c = db.find(x => x.id === id);
+        async function deleteClient(id) {
+            const db = window._clients || [];
+            const c = db.find(x => x.id === id);
             if (!c) return;
             if (!confirm(`Delete client "${c.name}"? This cannot be undone.`)) return;
-            saveDB(db.filter(x => x.id !== id));
-            showToast('🗑️', 'Client Deleted', `${c.name} has been removed`);
-            renderTable(); updateStats();
-            if (currentSearch) handleSearch();
+            try {
+                await window._db.deleteDoc(window._db.doc(id));
+                showToast('🗑️', 'Client Deleted', `${c.name} has been removed`);
+                if (currentSearch) handleSearch();
+            } catch (err) {
+                showToast('❌', 'Delete Failed', err.message.slice(0, 60));
+            }
         }
-
+ 
         // ── VIEW ──
         function viewClient(id) {
-            const db = getDB(); const c = db.find(x => x.id === id);
+            const db = window._clients || [];
+            const c = db.find(x => x.id === id);
             if (!c) return;
+ 
             const col = colorFor(c.name);
             document.getElementById('vAvatar').textContent = initials(c.name);
             document.getElementById('vAvatar').style.background = col;
             document.getElementById('vName').textContent = c.name;
             document.getElementById('vId').textContent = 'ID: ' + c.id;
-
+ 
             const ra = calcRunningAge(c.dob);
             const raStr = ra ? `${ra.years} yrs, ${ra.months} mo, ${ra.days} days` : '—';
-
+            const createdStr = c.createdAt ? tsToDate(c.createdAt).toLocaleString() : '—';
+            const updatedStr = c.updatedAt ? new Date(c.updatedAt).toLocaleString() : '—';
+ 
             document.getElementById('vBody').innerHTML = `
 <div class="view-section">
   <div class="view-section-title">Personal Details</div>
@@ -1816,65 +1761,102 @@ ${(c.secName || c.secMobile) ? `
 <div class="view-section">
   <div class="view-section-title">Record Info</div>
   <div class="view-grid">
-    <div class="view-field"><div class="view-field-label">Created</div><div class="view-field-value">${new Date(c.createdAt).toLocaleString()}</div></div>
-    <div class="view-field"><div class="view-field-label">Last Updated</div><div class="view-field-value">${c.updatedAt ? new Date(c.updatedAt).toLocaleString() : '—'}</div></div>
+    <div class="view-field"><div class="view-field-label">Created</div><div class="view-field-value">${createdStr}</div></div>
+    <div class="view-field"><div class="view-field-label">Last Updated</div><div class="view-field-value">${updatedStr}</div></div>
   </div>
 </div>
 <div style="display:flex;gap:10px;padding-top:4px">
   <button class="btn-save" style="flex:1;justify-content:center" onclick="closeViewModal();editClient('${c.id}')">✏️ Edit Client</button>
   <button class="btn-cancel" style="flex:1;text-align:center" onclick="closeViewModal();deleteClient('${c.id}')">🗑 Delete</button>
 </div>`;
-
+ 
             document.getElementById('viewOverlay').classList.add('open');
         }
-
+ 
         function closeViewModal() { document.getElementById('viewOverlay').classList.remove('open'); }
-        function handleViewOverlayClick(e) { if (e.target === document.getElementById('viewOverlay')) closeViewModal(); }
-
+        function handleViewOverlayClick(e) {
+            if (e.target === document.getElementById('viewOverlay')) closeViewModal();
+        }
+ 
         // ── EXPORT CSV ──
         function exportCSV() {
-            const db = getDB();
+            const db = window._clients || [];
             if (!db.length) { showToast('⚠️', 'No Data', 'Nothing to export'); return; }
-            const headers = ['ID', 'Name', 'DOB', 'Age', 'Birth Time', 'Birth Place', 'Mobile', 'Email', 'WhatsApp', 'Contacted From', 'House Direction', 'House Type', 'House Address', 'Point of Contact', 'Referred By', 'Sec Name', 'Sec Relation', 'Sec Mobile', 'Sec Email', 'Created At'];
+ 
+            const headers = ['ID', 'Name', 'DOB', 'Age', 'Birth Time', 'Birth Place', 'Mobile', 'Email',
+                'WhatsApp', 'Contacted From', 'House Direction', 'House Type', 'House Address',
+                'Point of Contact', 'Referred By', 'Sec Name', 'Sec Relation', 'Sec Mobile', 'Sec Email', 'Created At'];
+ 
             const rows = db.map(c => [
                 c.id, `"${c.name}"`, c.dob, c.age, c.birthTime, `"${c.birthPlace}"`,
                 c.mobile, c.email, c.whatsapp, `"${c.contactedFrom || ''}"`,
-                c.houseDirection, c.houseType, `"${c.houseAddress || ''}"`,
+                c.houseDirection, c.houseType, `"${(c.houseAddress || '').replace(/"/g, '""')}"`,
                 c.poc, `"${c.referredBy || ''}"`,
                 `"${c.secName || ''}"`, c.secRelation, c.secMobile, c.secEmail,
-                new Date(c.createdAt).toLocaleString()
+                tsToDate(c.createdAt).toLocaleString()
             ]);
+ 
             const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-            a.download = `clientvault_export_${Date.now()}.csv`; a.click();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `clientvault_export_${Date.now()}.csv`;
+            a.click();
             showToast('⬇️', 'Export Ready', `${db.length} records exported as CSV`);
         }
-
+ 
         // ── CLEAR ALL ──
-        function clearAll() {
-            const db = getDB(); if (!db.length) return;
-            if (!confirm(`This will permanently delete ALL ${db.length} client records. Are you sure?`)) return;
-            saveDB([]); renderTable(); updateStats();
-            showToast('🗑️', 'All Records Cleared', 'Database has been reset');
+        async function clearAll() {
+            const db = window._clients || [];
+            if (!db.length) return;
+            if (!confirm(`This will permanently delete ALL ${db.length} client records from Firebase. Are you sure?`)) return;
+ 
+            showToast('⏳', 'Deleting…', 'Please wait');
+            try {
+                await Promise.all(db.map(c => window._db.deleteDoc(window._db.doc(c.id))));
+                showToast('🗑️', 'All Records Cleared', 'Database has been reset');
+            } catch (err) {
+                showToast('❌', 'Error', err.message.slice(0, 60));
+            }
         }
-
+ 
         // ── TOAST ──
         let toastTimer;
-        function showToast(icon, title, sub) {
+        window.showToast = function (icon, title, sub) {
             const t = document.getElementById('toast');
             document.getElementById('toastIcon').textContent = icon;
             document.getElementById('toastTitle').textContent = title;
             document.getElementById('toastSub').textContent = sub || '';
-            t.classList.add('show'); clearTimeout(toastTimer);
+            t.classList.add('show');
+            clearTimeout(toastTimer);
             toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
-        }
-
-        // ── HELPERS ──
-        function escHtml(str) { return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-        function formatDate(iso) { return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
-        function formatDOB(dob) { if (!dob) return '—'; const [y, m, d] = dob.split('-'); return `${d}/${m}/${y}`; }
+        };
+ 
+        // ── INIT ──
+        waitForFirebase(() => {
+            // _clients is already being populated by onSnapshot
+            // If snapshot fires before DOM ready, render now
+            if (window._clients) {
+                renderTable();
+                updateStats();
+            }
+        });
+ 
+        // Timeout fallback if firebase never fires
+        setTimeout(() => {
+            if (!dbConnected && window._dbError) {
+                setDbStatus('error', 'Failed');
+                document.getElementById('tableContainer').innerHTML = `<div class="empty-state">
+                    <div class="empty-icon">❌</div>
+                    <h3>Database Connection Failed</h3>
+                    <p style="color:var(--danger)">${window._dbError}</p>
+                    <p style="margin-top:8px;font-size:0.8rem">Check Firebase config and Firestore rules.</p>
+                </div>`;
+            } else if (!dbConnected) {
+                setDbStatus('error', 'Timeout');
+            }
+        }, 8000);
     </script>
 </body>
-
+ 
 </html>
